@@ -1,251 +1,276 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../../services/api";
 import { socket } from "../../services/socket";
-import { useEffect, useState } from "react";
-import RideCard from "../../components/RideCard";
-import Loader from "../../components/Loader";
+import StatusBadge from "../../components/StatusBadge";
 
 export default function RiderDashboard() {
-  const [pendingRides, setPendingRides] = useState([]);
-  const [acceptedRides, setAcceptedRides] = useState([]);
-  const [ongoingRides, setOngoingRides] = useState([]);
-  const [cancelledRides, setCancelledRides] = useState([]);
+  const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("pending");
-  const [trackingRide, setTrackingRide] = useState(null);
-  const [locationInterval, setLocationInterval] = useState(null);
-
-  const fetchRides = async () => {
-    try {
-      const res = await API.get("/ride/pending");
-
-      const pending = [];
-      const accepted = [];
-      const ongoing = [];
-      const cancelled = [];
-
-      res.data.forEach(ride => {
-        if (ride.status === "pending") pending.push(ride);
-        if (ride.status === "accepted") accepted.push(ride);
-        if (ride.status === "ongoing") ongoing.push(ride);
-        if (ride.status === "cancelled") cancelled.push(ride);
-      });
-
-      setPendingRides(pending);
-      setAcceptedRides(accepted);
-      setOngoingRides(ongoing);
-      setCancelledRides(cancelled);
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
-    }
-  };
+  const [activeFilter, setActiveFilter] = useState("accepted");
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchRides();
 
-    socket.on("newRide", fetchRides);
-    socket.on("rideUpdate", fetchRides);
+    // Listen for new ride assignments
+    socket.on("rideUpdate", (updatedRide) => {
+      fetchRides(); // Refresh the list
+    });
 
     return () => {
-      socket.off("newRide");
       socket.off("rideUpdate");
-      if (locationInterval) {
-        clearInterval(locationInterval);
-      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const acceptRide = async (id) => {
+  const fetchRides = async () => {
     try {
-      await API.post(`/ride/accept/${id}`);
+      const res = await API.get("/ride/rider-rides");
+      setRides(res.data);
+      setLoading(false);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching rides:", err);
+      setLoading(false);
     }
   };
 
-  const startRide = async (id) => {
+  const handleStartRide = async (rideId) => {
     try {
-      await API.post(`/ride/start/${id}`);
-      setTrackingRide(id);
-      startLocationTracking(id);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const startLocationTracking = (rideId) => {
-    // Simulate rider movement (in real app, use navigator.geolocation)
-    let lat = 12.9716; // Starting position (Bangalore)
-    let lng = 77.5946;
-
-    const interval = setInterval(() => {
-      // Simulate movement (random walk)
-      lat += (Math.random() - 0.5) * 0.005;
-      lng += (Math.random() - 0.5) * 0.005;
-
-      const location = { lat, lng };
-      console.log("📍 Sending location update:", location);
-
-      socket.emit("updateRiderLocation", {
-        rideId,
-        location
-      });
-    }, 5000); // Update every 5 seconds
-
-    setLocationInterval(interval);
-  };
-
-  const stopLocationTracking = () => {
-    if (locationInterval) {
-      clearInterval(locationInterval);
-      setLocationInterval(null);
-    }
-  };
-
-  const completeRide = async (id) => {
-    try {
-      await API.post(`/ride/complete/${id}`);
-      stopLocationTracking();
-      setTrackingRide(null);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const cancelRide = async (id) => {
-    try {
-      await API.post(`/ride/cancel/${id}`);
-      if (trackingRide === id) {
-        stopLocationTracking();
-        setTrackingRide(null);
+      await API.post(`/ride/start/${rideId}`);
+      
+      // Start sending location updates
+      if (navigator.geolocation) {
+        const watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            API.post(`/ride/update-location/${rideId}`, { location });
+          },
+          (error) => console.error("Location error:", error),
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+        localStorage.setItem(`watchId-${rideId}`, watchId);
       }
+
+      fetchRides();
+      alert("Ride started! Your location is now being tracked.");
     } catch (err) {
-      console.error(err);
+      console.error("Error starting ride:", err);
+      alert("Failed to start ride");
     }
+  };
+
+  const handleCompleteRide = async (rideId) => {
+    try {
+      const watchId = localStorage.getItem(`watchId-${rideId}`);
+      if (watchId) {
+        navigator.geolocation.clearWatch(Number(watchId));
+        localStorage.removeItem(`watchId-${rideId}`);
+      }
+
+      await API.post(`/ride/complete/${rideId}`);
+      fetchRides();
+      alert("Ride completed successfully!");
+    } catch (err) {
+      console.error("Error completing ride:", err);
+      alert("Failed to complete ride");
+    }
+  };
+
+  const filteredRides = rides.filter((ride) => {
+    if (activeFilter === "all") return true;
+    return ride.status === activeFilter;
+  });
+
+  const stats = {
+    accepted: rides.filter((r) => r.status === "accepted").length,
+    ongoing: rides.filter((r) => r.status === "ongoing").length,
+    completed: rides.filter((r) => r.status === "completed").length,
   };
 
   if (loading) {
-    return <Loader message="Loading available rides..." />;
+    return <div style={{ padding: 40, color: "white" }}>Loading...</div>;
   }
 
   return (
-    <>
-      <div className="page">
-        <div className="header center">
-          <h1>Rider Dashboard</h1>
-          {trackingRide && (
-            <div style={{ background: "#22c55e", padding: "10px 20px", borderRadius: "8px", color: "white", marginTop: 10 }}>
-              <strong>📍 Live Tracking Active</strong>
-              <div style={{ fontSize: "12px", marginTop: 4 }}>Sending location updates every 5 seconds</div>
+    <div style={{ padding: "30px", background: "#0f0f23", minHeight: "100vh", color: "white" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+        <h1 style={{ fontSize: 32, fontWeight: "bold", marginBottom: 30, display: "flex", alignItems: "center", gap: 10 }}>
+          🏍️ Rider Dashboard
+        </h1>
+
+        {/* Stats Cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, marginBottom: 30 }}>
+          <div style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", padding: 20, borderRadius: 12, cursor: "pointer" }} onClick={() => setActiveFilter("accepted")}>
+            <div style={{ fontSize: 14, opacity: 0.9 }}>⏳ Accepted</div>
+            <div style={{ fontSize: 32, fontWeight: "bold", marginTop: 8 }}>{stats.accepted}</div>
+          </div>
+          <div style={{ background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", padding: 20, borderRadius: 12, cursor: "pointer" }} onClick={() => setActiveFilter("ongoing")}>
+            <div style={{ fontSize: 14, opacity: 0.9 }}>🚀 Ongoing</div>
+            <div style={{ fontSize: 32, fontWeight: "bold", marginTop: 8 }}>{stats.ongoing}</div>
+          </div>
+          <div style={{ background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", padding: 20, borderRadius: 12, cursor: "pointer" }} onClick={() => setActiveFilter("completed")}>
+            <div style={{ fontSize: 14, opacity: 0.9 }}>✅ Completed</div>
+            <div style={{ fontSize: 32, fontWeight: "bold", marginTop: 8 }}>{stats.completed}</div>
+          </div>
+        </div>
+
+        {/* Filter Buttons */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+          {["all", "accepted", "ongoing", "completed"].map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              style={{
+                padding: "10px 20px",
+                borderRadius: 8,
+                border: "none",
+                background: activeFilter === filter ? "#667eea" : "#1a1a2e",
+                color: "white",
+                cursor: "pointer",
+                textTransform: "capitalize",
+                fontWeight: activeFilter === filter ? "bold" : "normal",
+              }}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
+        {/* Rides List */}
+        <div style={{ display: "grid", gap: 20 }}>
+          {filteredRides.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 40, background: "#1a1a2e", borderRadius: 12 }}>
+              <p style={{ fontSize: 18, opacity: 0.7 }}>No {activeFilter} rides</p>
             </div>
+          ) : (
+            filteredRides.map((ride) => (
+              <div
+                key={ride._id}
+                style={{
+                  background: "#1a1a2e",
+                  padding: 25,
+                  borderRadius: 12,
+                  border: "1px solid #2a2a3e",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 }}>
+                  <div>
+                    <h3 style={{ fontSize: 18, fontWeight: "bold", marginBottom: 5 }}>
+                      Ride #{ride._id.slice(-6).toUpperCase()}
+                    </h3>
+                    <StatusBadge status={ride.status} />
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 24, fontWeight: "bold", color: "#4facfe" }}>₹{ride.fare?.totalFare || 0}</div>
+                    <div style={{ fontSize: 12, opacity: 0.7 }}>{ride.distance?.toFixed(2) || 0} km</div>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15, marginBottom: 20 }}>
+                  <div>
+                    <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 5 }}>Customer</div>
+                    <div style={{ fontSize: 16, fontWeight: "500" }}>{ride.customerName}</div>
+                    <div style={{ fontSize: 14, opacity: 0.8 }}>{ride.customerPhone}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 5 }}>Booked</div>
+                    <div style={{ fontSize: 14 }}>{new Date(ride.createdAt).toLocaleString()}</div>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+                    <span style={{ color: "#4ade80", fontSize: 18 }}>📍</span>
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.7 }}>Pickup</div>
+                      <div style={{ fontSize: 14 }}>{ride.pickup?.name || `${ride.pickup?.lat}, ${ride.pickup?.lng}`}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <span style={{ color: "#f87171", fontSize: 18 }}>📍</span>
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.7 }}>Drop</div>
+                      <div style={{ fontSize: 14 }}>{ride.drop?.name || `${ride.drop?.lat}, ${ride.drop?.lng}`}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {ride.otp && (
+                  <div style={{ background: "#2a2a3e", padding: 15, borderRadius: 8, marginBottom: 15 }}>
+                    <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 5 }}>Ride OTP</div>
+                    <div style={{ fontSize: 24, fontWeight: "bold", letterSpacing: 4, color: "#4facfe" }}>{ride.otp}</div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {ride.status === "accepted" && (
+                    <button
+                      onClick={() => handleStartRide(ride._id)}
+                      style={{
+                        flex: 1,
+                        padding: "12px 24px",
+                        borderRadius: 8,
+                        border: "none",
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        color: "white",
+                        fontSize: 16,
+                        fontWeight: "bold",
+                        cursor: "pointer",
+                      }}
+                    >
+                      🚀 Start Ride
+                    </button>
+                  )}
+                  {ride.status === "ongoing" && (
+                    <>
+                      <button
+                        onClick={() => navigate(`/live-map/${ride._id}`)}
+                        style={{
+                          flex: 1,
+                          padding: "12px 24px",
+                          borderRadius: 8,
+                          border: "none",
+                          background: "#2a2a3e",
+                          color: "white",
+                          fontSize: 16,
+                          cursor: "pointer",
+                        }}
+                      >
+                        🗺️ View Map
+                      </button>
+                      <button
+                        onClick={() => handleCompleteRide(ride._id)}
+                        style={{
+                          flex: 1,
+                          padding: "12px 24px",
+                          borderRadius: 8,
+                          border: "none",
+                          background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+                          color: "white",
+                          fontSize: 16,
+                          fontWeight: "bold",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ✅ Complete Ride
+                      </button>
+                    </>
+                  )}
+                  {ride.status === "completed" && (
+                    <div style={{ width: "100%", textAlign: "center", padding: 10, opacity: 0.7 }}>
+                      Ride completed successfully
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
           )}
         </div>
-
-        <div className="tabs">
-          <button
-            className={activeTab === "pending" ? "active" : ""}
-            onClick={() => setActiveTab("pending")}
-          >
-            Pending ({pendingRides.length})
-          </button>
-
-          <button
-            className={activeTab === "accepted" ? "active" : ""}
-            onClick={() => setActiveTab("accepted")}
-          >
-            Accepted ({acceptedRides.length})
-          </button>
-
-          <button
-            className={activeTab === "ongoing" ? "active" : ""}
-            onClick={() => setActiveTab("ongoing")}
-          >
-            Ongoing ({ongoingRides.length})
-          </button>
-
-          <button
-            className={activeTab === "cancelled" ? "active" : ""}
-            onClick={() => setActiveTab("cancelled")}
-          >
-            Cancelled ({cancelledRides.length})
-          </button>
-        </div>
-
-        {/* PENDING */}
-        {activeTab === "pending" && (
-          <>
-            {pendingRides.length === 0 && <p className="empty">No pending rides</p>}
-            {pendingRides.map(ride => (
-              <RideCard
-                key={ride._id}
-                ride={ride}
-                onAccept={acceptRide}
-                onCancel={cancelRide}
-                showActions
-              />
-            ))}
-          </>
-        )}
-
-        {/* ACCEPTED */}
-        {activeTab === "accepted" && (
-          <>
-            {acceptedRides.length === 0 && <p className="empty">No accepted rides</p>}
-            {acceptedRides.map(ride => (
-              <div key={ride._id}>
-                <RideCard ride={ride} />
-                <div style={{ textAlign: "center", marginTop: 10 }}>
-                  <button 
-                    onClick={() => startRide(ride._id)}
-                    className="btn-primary"
-                    style={{ marginRight: 10 }}
-                  >
-                    🚀 Start Ride
-                  </button>
-                  <button 
-                    onClick={() => cancelRide(ride._id)}
-                    className="btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ))}
-          </>
-        )}
-
-        {/* ONGOING */}
-        {activeTab === "ongoing" && (
-          <>
-            {ongoingRides.length === 0 && <p className="empty">No ongoing rides</p>}
-            {ongoingRides.map(ride => (
-              <div key={ride._id}>
-                <RideCard ride={ride} />
-                <div style={{ textAlign: "center", marginTop: 10 }}>
-                  <button 
-                    onClick={() => completeRide(ride._id)}
-                    className="btn-primary"
-                  >
-                    ✅ Complete Ride
-                  </button>
-                </div>
-              </div>
-            ))}
-          </>
-        )}
-
-        {/* CANCELLED */}
-        {activeTab === "cancelled" && (
-          <>
-            {cancelledRides.length === 0 && <p className="empty">No cancelled rides</p>}
-            {cancelledRides.map(ride => (
-              <RideCard key={ride._id} ride={ride} />
-            ))}
-          </>
-        )}
       </div>
-    </>
+    </div>
   );
 }

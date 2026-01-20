@@ -121,9 +121,6 @@ export default function RidersList() {
         <div style={{ display: "grid", gap: "15px" }}>
           {filteredRides.map((ride) => (
             <div key={ride._id} className="card" style={{ padding: "20px" }}>
-              {/* Debug: Show raw data */}
-              {console.log("Rendering ride:", ride)}
-              
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "15px" }}>
                 <StatusBadge status={ride.status} />
                 {ride.otp && (

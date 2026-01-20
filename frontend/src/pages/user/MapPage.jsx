@@ -106,6 +106,22 @@ export default function MapPage() {
 
     try {
       setBooking(true);
+      console.log("Booking ride with data:", {
+        customerName,
+        customerPhone,
+        customerEmail,
+        pickup: { 
+          address: pickupAddress,
+          lat: pickupLocation.lat, 
+          lng: pickupLocation.lng 
+        },
+        drop: { 
+          address: dropAddress,
+          lat: dropLocation.lat, 
+          lng: dropLocation.lng 
+        }
+      });
+      
       const res = await API.post("/ride/book", {
         customerName,
         customerPhone,
@@ -121,10 +137,18 @@ export default function MapPage() {
           lng: dropLocation.lng 
         }
       });
-      alert(`✅ Ride booked successfully!\n\n📧 OTP has been sent to: ${customerEmail}\nRide ID: #${res.data._id.slice(-6)}\nOTP: ${res.data.otp}\n\nPlease check your email for ride details!`);
+      
+      console.log("Booking response:", res.data);
+      
+      const fareMsg = res.data.fare ? `\n💰 Fare: ₹${res.data.fare.totalFare}\n📏 Distance: ${res.data.distance} km` : '';
+      const autoAssignMsg = res.data.autoAssigned ? `\n🚴 ${res.data.assignmentMessage}` : '\n⏳ Waiting for rider assignment...';
+      
+      alert(`✅ Ride booked successfully!\n\n📧 OTP sent to: ${customerEmail}\n🆔 Ride ID: #${res.data._id.slice(-6)}\n🔐 OTP: ${res.data.otp}${fareMsg}${autoAssignMsg}\n\nCheck your email for details!`);
       navigate("/my-rides?status=pending");
     } catch (err) {
-      alert("❌ Failed to book ride. Please try again.");
+      console.error("Booking error:", err);
+      const errorMsg = err.response?.data?.message || err.message || "Unknown error";
+      alert(`❌ Failed to book ride.\n\nError: ${errorMsg}\n\nPlease try again.`);
       setBooking(false);
     }
   };

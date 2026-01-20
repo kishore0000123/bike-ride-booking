@@ -87,6 +87,18 @@ exports.getMyRides = async (req, res) => {
   res.json(rides);
 };
 
+exports.getRiderRides = async (req, res) => {
+  try {
+    const rides = await Ride.find({ riderId: req.user._id })
+      .populate("userId", "name email")
+      .sort({ createdAt: -1 });
+    res.json(rides);
+  } catch (err) {
+    console.error("Error fetching rider rides:", err);
+    res.status(500).json({ message: "Failed to fetch rides" });
+  }
+};
+
 exports.getRideById = async (req, res) => {
   const ride = await Ride.findById(req.params.id)
     .populate("userId", "name email")

@@ -9,6 +9,7 @@ const {
   cancelRide,
   getPendingRides,
   getMyRides,
+  getRiderRides,
   getRideById,
   rateRide,
   getAllRides,
@@ -38,6 +39,9 @@ router.get("/:id", protect, getRideById);
 
 // Get all pending rides
 router.get("/pending", protect, getPendingRides);
+
+// Get rider's assigned rides
+router.get("/rider-rides", protect, getRiderRides);
 
 // Accept a ride
 router.post("/accept/:id", protect, acceptRide);

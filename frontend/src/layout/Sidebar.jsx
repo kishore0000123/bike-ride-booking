@@ -68,10 +68,10 @@ const Sidebar = () => {
 
       {role === "rider" && (
         <>
-          <NavLink to="/rider-dashboard" end>📊 Dashboard</NavLink>
-          <NavLink to="/rider-dashboard?tab=pending">⏳ Pending Rides</NavLink>
-          <NavLink to="/rider-dashboard?tab=accepted">✅ Accepted Rides</NavLink>
-          <NavLink to="/rider-dashboard?tab=cancelled">❌ Cancelled</NavLink>
+          <NavLink to="/rider-dashboard" end>🏍️ Rider Dashboard</NavLink>
+          <NavLink to="/rider-dashboard?status=accepted">⏳ Accepted Rides</NavLink>
+          <NavLink to="/rider-dashboard?status=ongoing">🚀 Ongoing Rides</NavLink>
+          <NavLink to="/rider-dashboard?status=completed">✅ Completed Rides</NavLink>
         </>
       )}
 
