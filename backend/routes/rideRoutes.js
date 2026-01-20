@@ -9,7 +9,11 @@ const {
   cancelRide,
   getPendingRides,
   getMyRides,
-  getRideById
+  getRideById,
+  rateRide,
+  getAllRides,
+  getAdminStats,
+  updateRiderLocation
 } = require("../controllers/rideController");
 
 /* ===================== USER ROUTES ===================== */
@@ -22,6 +26,9 @@ router.get("/my-rides", protect, getMyRides);
 
 // Cancel a ride (only owner)
 router.post("/cancel/:id", protect, cancelRide);
+
+// Rate a ride
+router.post("/rate/:id", protect, rateRide);
 
 // Get ride details page
 router.get("/:id", protect, getRideById);
@@ -40,5 +47,17 @@ router.post("/start/:id", protect, startRide);
 
 // Complete a ride
 router.post("/complete/:id", protect, completeRide);
+
+// Update rider location during ride
+router.post("/update-location/:id", protect, updateRiderLocation);
+
+
+/* ===================== ADMIN ROUTES ===================== */
+
+// Get all rides (admin)
+router.get("/admin/all-rides", protect, getAllRides);
+
+// Get admin statistics
+router.get("/admin/stats", protect, getAdminStats);
 
 module.exports = router;
