@@ -14,10 +14,11 @@ export default function RidersList() {
   const fetchRidesHistory = async () => {
     try {
       const res = await API.get("/ride/my-rides");
+      console.log("Fetched rides:", res.data);
       setAllRides(res.data);
       setLoading(false);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching rides:", err);
       setLoading(false);
     }
   };
@@ -33,6 +34,19 @@ export default function RidersList() {
     ongoing: allRides.filter(r => r.status === "ongoing").length,
     completed: allRides.filter(r => r.status === "completed").length,
     cancelled: allRides.filter(r => r.status === "cancelled").length
+  };
+
+  const extractCityName = (address) => {
+    if (!address) return "N/A";
+    // Try to extract city from address
+    // Common formats: "Street, City, State" or "Area, City"
+    const parts = address.split(',');
+    if (parts.length >= 2) {
+      // Return the second part (usually the city)
+      return parts[1].trim();
+    }
+    // If no comma, return first 30 characters
+    return address.length > 30 ? address.substring(0, 30) + '...' : address;
   };
 
   if (loading) {
@@ -107,73 +121,73 @@ export default function RidersList() {
         <div style={{ display: "grid", gap: "15px" }}>
           {filteredRides.map((ride) => (
             <div key={ride._id} className="card" style={{ padding: "20px" }}>
+              {/* Debug: Show raw data */}
+              {console.log("Rendering ride:", ride)}
+              
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "15px" }}>
-                <div>
-                  <h3 style={{ margin: "0 0 5px 0", color: "white" }}>
-                    Ride #{ride._id.slice(-6)}
-                  </h3>
-                  <p style={{ margin: "5px 0", color: "#94a3b8", fontSize: "14px" }}>
-                    📅 {new Date(ride.createdAt).toLocaleString()}
-                  </p>
-                </div>
                 <StatusBadge status={ride.status} />
-              </div>
-
-              {/* Customer Details */}
-              <div style={{ 
-                background: "#1e293b", 
-                padding: "15px", 
-                borderRadius: "8px", 
-                marginBottom: "15px" 
-              }}>
-                <h4 style={{ margin: "0 0 10px 0", color: "#94a3b8", fontSize: "14px" }}>Customer Details</h4>
-                <p style={{ margin: "5px 0", color: "white" }}>👤 {ride.customerName}</p>
-                <p style={{ margin: "5px 0", color: "#94a3b8" }}>📞 {ride.customerPhone}</p>
-                <p style={{ margin: "5px 0", color: "#94a3b8" }}>📧 {ride.customerEmail}</p>
                 {ride.otp && (
-                  <p style={{ margin: "5px 0", color: "#f59e0b", fontWeight: "bold" }}>🔐 OTP: {ride.otp}</p>
+                  <div style={{ 
+                    background: "#fef3c7", 
+                    color: "#92400e", 
+                    padding: "10px 20px", 
+                    borderRadius: "8px",
+                    textAlign: "center"
+                  }}>
+                    <div style={{ fontSize: "12px", fontWeight: "600" }}>OTP</div>
+                    <div style={{ fontSize: "24px", fontWeight: "bold", letterSpacing: "2px" }}>{ride.otp}</div>
+                  </div>
                 )}
               </div>
 
-              {/* Rider Details */}
-              {ride.riderId && (
-                <div style={{ 
-                  background: "#1e293b", 
-                  padding: "15px", 
-                  borderRadius: "8px", 
-                  marginBottom: "15px" 
-                }}>
-                  <h4 style={{ margin: "0 0 10px 0", color: "#94a3b8", fontSize: "14px" }}>Rider Details</h4>
-                  <p style={{ margin: "5px 0", color: "white" }}>🚴 {ride.riderId.name}</p>
-                  <p style={{ margin: "5px 0", color: "#94a3b8" }}>📧 {ride.riderId.email}</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", color: "#94a3b8" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ fontSize: "18px" }}>👤</span>
+                  <span style={{ fontWeight: "600", color: "#64748b" }}>Customer:</span>
+                  <span style={{ marginLeft: "auto", color: "white" }}>{ride.customerName}</span>
                 </div>
-              )}
 
-              {/* Location Details */}
-              <div style={{ 
-                background: "#1e293b", 
-                padding: "15px", 
-                borderRadius: "8px" 
-              }}>
-                <h4 style={{ margin: "0 0 10px 0", color: "#94a3b8", fontSize: "14px" }}>Route Details</h4>
-                <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
-                  <div>
-                    <p style={{ margin: "0", color: "#10b981", fontWeight: "bold", fontSize: "14px" }}>📍 Pickup</p>
-                  </div>
-                  <div>
-                    <p style={{ margin: "0", color: "#ef4444", fontWeight: "bold", fontSize: "14px" }}>📍 Drop</p>
-                  </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ fontSize: "18px" }}>📱</span>
+                  <span style={{ fontWeight: "600", color: "#64748b" }}>Phone:</span>
+                  <span style={{ marginLeft: "auto", color: "white" }}>{ride.customerPhone}</span>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ fontSize: "18px", color: "#10b981" }}>📍</span>
+                  <span style={{ fontWeight: "600", color: "#64748b" }}>Pickup:</span>
+                  <span style={{ marginLeft: "auto", color: "white" }}>
+                    {ride.pickup.lat && ride.pickup.lng 
+                      ? `Lat: ${ride.pickup.lat.toFixed(4)}, Lng: ${ride.pickup.lng.toFixed(4)}`
+                      : extractCityName(ride.pickup.address)}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ fontSize: "18px", color: "#ef4444" }}>🏁</span>
+                  <span style={{ fontWeight: "600", color: "#64748b" }}>Drop:</span>
+                  <span style={{ marginLeft: "auto", color: "white" }}>
+                    {ride.drop.lat && ride.drop.lng 
+                      ? `Lat: ${ride.drop.lat.toFixed(4)}, Lng: ${ride.drop.lng.toFixed(4)}`
+                      : extractCityName(ride.drop.address)}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ fontSize: "18px" }}>⏱️</span>
+                  <span style={{ fontWeight: "600", color: "#64748b" }}>Booked:</span>
+                  <span style={{ marginLeft: "auto", color: "white" }}>
+                    {new Date(ride.createdAt).toLocaleString('en-GB', { 
+                      day: '2-digit', 
+                      month: '2-digit', 
+                      year: 'numeric', 
+                      hour: '2-digit', 
+                      minute: '2-digit', 
+                      second: '2-digit' 
+                    })}
+                  </span>
                 </div>
               </div>
-
-              {/* Timestamps */}
-              {ride.updatedAt && (
-                <div style={{ marginTop: "15px", paddingTop: "15px", borderTop: "1px solid #334155" }}>
-                  <p style={{ margin: "0", color: "#64748b", fontSize: "12px" }}>
-                    Last updated: {new Date(ride.updatedAt).toLocaleString()}
-                  </p>
-                </div>
-              )}
             </div>
           ))}
         </div>
