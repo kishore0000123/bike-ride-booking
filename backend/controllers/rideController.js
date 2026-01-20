@@ -7,6 +7,13 @@ const { autoAssignRider } = require("../utils/riderAssignment");
 
 exports.bookRide = async (req, res) => {
   try {
+    console.log("Booking request body:", req.body);
+    
+    // Validate coordinates
+    if (!req.body.pickup?.lat || !req.body.pickup?.lng || !req.body.drop?.lat || !req.body.drop?.lng) {
+      return res.status(400).json({ message: "Invalid pickup or drop location coordinates" });
+    }
+
     // Calculate fare
     const fareDetails = await calculateFare(
       req.body.pickup.lat,
@@ -14,6 +21,8 @@ exports.bookRide = async (req, res) => {
       req.body.drop.lat,
       req.body.drop.lng
     );
+
+    console.log("Fare calculated:", fareDetails);
 
     const ride = await Ride.create({
       userId: req.user._id,
@@ -35,17 +44,22 @@ exports.bookRide = async (req, res) => {
       .populate("userId", "name email");
 
     // Send OTP email
-    await sendOTPEmail(
-      req.body.customerEmail,
-      req.body.customerName,
-      ride.otp,
-      {
-        rideId: ride._id.toString().slice(-6),
-        pickup: req.body.pickup.address,
-        drop: req.body.drop.address,
-        fare: fareDetails.totalFare
-      }
-    );
+    try {
+      await sendOTPEmail(
+        req.body.customerEmail,
+        req.body.customerName,
+        ride.otp,
+        {
+          rideId: ride._id.toString().slice(-6),
+          pickup: req.body.pickup.address,
+          drop: req.body.drop.address,
+          fare: fareDetails.totalFare
+        }
+      );
+    } catch (emailError) {
+      console.error("Email send error:", emailError);
+      // Continue even if email fails
+    }
 
     // Auto-assign nearest rider
     const assignment = await autoAssignRider(ride);
