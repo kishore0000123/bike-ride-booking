@@ -156,23 +156,13 @@ export default function RidersList() {
                 borderRadius: "8px" 
               }}>
                 <h4 style={{ margin: "0 0 10px 0", color: "#94a3b8", fontSize: "14px" }}>Route Details</h4>
-                <div style={{ marginBottom: "10px" }}>
-                  <p style={{ margin: "0 0 5px 0", color: "#10b981", fontWeight: "bold" }}>📍 Pickup</p>
-                  <p style={{ margin: "0", color: "#94a3b8", fontSize: "14px" }}>{ride.pickup.address}</p>
-                  {ride.pickup.lat && (
-                    <p style={{ margin: "5px 0 0 0", color: "#64748b", fontSize: "12px" }}>
-                      Coordinates: {ride.pickup.lat.toFixed(6)}, {ride.pickup.lng.toFixed(6)}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <p style={{ margin: "0 0 5px 0", color: "#ef4444", fontWeight: "bold" }}>📍 Drop</p>
-                  <p style={{ margin: "0", color: "#94a3b8", fontSize: "14px" }}>{ride.drop.address}</p>
-                  {ride.drop.lat && (
-                    <p style={{ margin: "5px 0 0 0", color: "#64748b", fontSize: "12px" }}>
-                      Coordinates: {ride.drop.lat.toFixed(6)}, {ride.drop.lng.toFixed(6)}
-                    </p>
-                  )}
+                <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+                  <div>
+                    <p style={{ margin: "0", color: "#10b981", fontWeight: "bold", fontSize: "14px" }}>📍 Pickup</p>
+                  </div>
+                  <div>
+                    <p style={{ margin: "0", color: "#ef4444", fontWeight: "bold", fontSize: "14px" }}>📍 Drop</p>
+                  </div>
                 </div>
               </div>
 
