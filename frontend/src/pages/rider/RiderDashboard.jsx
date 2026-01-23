@@ -6,20 +6,28 @@ import StatusBadge from "../../components/StatusBadge";
 
 export default function RiderDashboard() {
   const [rides, setRides] = useState([]);
+  const [pendingRides, setPendingRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("accepted");
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchRides();
+    fetchPendingRides();
 
     // Listen for new ride assignments
     socket.on("rideUpdate", (updatedRide) => {
       fetchRides(); // Refresh the list
+      fetchPendingRides();
+    });
+
+    socket.on("newRide", (newRide) => {
+      fetchPendingRides(); // Refresh pending rides
     });
 
     return () => {
       socket.off("rideUpdate");
+      socket.off("newRide");
     };
   }, []);
 
@@ -31,6 +39,27 @@ export default function RiderDashboard() {
     } catch (err) {
       console.error("Error fetching rides:", err);
       setLoading(false);
+    }
+  };
+
+  const fetchPendingRides = async () => {
+    try {
+      const res = await API.get("/ride/pending");
+      setPendingRides(res.data);
+    } catch (err) {
+      console.error("Error fetching pending rides:", err);
+    }
+  };
+
+  const handleAcceptRide = async (rideId) => {
+    try {
+      await API.post(`/ride/accept/${rideId}`);
+      fetchRides();
+      fetchPendingRides();
+      alert("Ride accepted successfully!");
+    } catch (err) {
+      console.error("Error accepting ride:", err);
+      alert("Failed to accept ride");
     }
   };
 
@@ -100,6 +129,88 @@ export default function RiderDashboard() {
         <h1 style={{ fontSize: 32, fontWeight: "bold", marginBottom: 30, display: "flex", alignItems: "center", gap: 10 }}>
           🏍️ Rider Dashboard
         </h1>
+
+        {/* Pending Rides Section */}
+        {pendingRides.length > 0 && (
+          <div style={{ marginBottom: 30 }}>
+            <h2 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 20, color: "#f59e0b" }}>
+              🔔 Available Rides ({pendingRides.length})
+            </h2>
+            <div style={{ display: "grid", gap: 15 }}>
+              {pendingRides.map((ride) => (
+                <div
+                  key={ride._id}
+                  style={{
+                    background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
+                    padding: 20,
+                    borderRadius: 12,
+                    border: "2px solid #f59e0b",
+                    color: "#1a1a2e",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 }}>
+                    <div>
+                      <h3 style={{ fontSize: 18, fontWeight: "bold", marginBottom: 5 }}>
+                        Ride #{ride._id.slice(-6).toUpperCase()}
+                      </h3>
+                      <div style={{ fontSize: 14, color: "#92400e", fontWeight: "600" }}>PENDING - Available to Accept</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 24, fontWeight: "bold", color: "#92400e" }}>₹{ride.fare?.totalFare || 0}</div>
+                      <div style={{ fontSize: 12, opacity: 0.8 }}>{ride.distance?.toFixed(2) || 0} km</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15, marginBottom: 15 }}>
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 5 }}>Customer</div>
+                      <div style={{ fontSize: 16, fontWeight: "500" }}>{ride.customerName}</div>
+                      <div style={{ fontSize: 14, opacity: 0.8 }}>{ride.customerPhone}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 5 }}>Booked</div>
+                      <div style={{ fontSize: 14 }}>{new Date(ride.createdAt).toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: 15 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+                      <span style={{ fontSize: 18 }}>📍</span>
+                      <div>
+                        <div style={{ fontSize: 12, opacity: 0.7 }}>Pickup</div>
+                        <div style={{ fontSize: 14 }}>{ride.pickup?.address || `${ride.pickup?.lat}, ${ride.pickup?.lng}`}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                      <span style={{ fontSize: 18 }}>🏁</span>
+                      <div>
+                        <div style={{ fontSize: 12, opacity: 0.7 }}>Drop</div>
+                        <div style={{ fontSize: 14 }}>{ride.drop?.address || `${ride.drop?.lat}, ${ride.drop?.lng}`}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleAcceptRide(ride._id)}
+                    style={{
+                      width: "100%",
+                      padding: "12px 24px",
+                      borderRadius: 8,
+                      border: "none",
+                      background: "#92400e",
+                      color: "white",
+                      fontSize: 16,
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ✅ Accept This Ride
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, marginBottom: 30 }}>

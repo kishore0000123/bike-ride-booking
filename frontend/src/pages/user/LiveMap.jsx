@@ -218,16 +218,18 @@ export default function LiveMap() {
 
             <div style={{ color: "#94a3b8", fontSize: "14px", lineHeight: "1.8" }}>
               <div style={{ marginBottom: 10 }}>
-                <strong style={{ color: "white" }}>Customer:</strong> {ride.customerName}
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ fontSize: "18px" }}>👤</span>
+                  <span style={{ fontWeight: "600", color: "#64748b" }}>Customer:</span>
+                  <span style={{ marginLeft: "auto", color: "white" }}>{ride.customerName}</span>
+                </div>
               </div>
               <div style={{ marginBottom: 10 }}>
-                <strong style={{ color: "white" }}>Phone:</strong> {ride.customerPhone}
-              </div>
-              <div style={{ marginBottom: 10 }}>
-                <strong style={{ color: "white" }}>OTP:</strong>{" "}
-                <span style={{ background: "#0f172a", padding: "4px 12px", borderRadius: "6px", fontWeight: "bold", color: "#22c55e" }}>
-                  {ride.otp}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ fontSize: "18px" }}>📱</span>
+                  <span style={{ fontWeight: "600", color: "#64748b" }}>Phone:</span>
+                  <span style={{ marginLeft: "auto", color: "white" }}>{ride.customerPhone}</span>
+                </div>
               </div>
             </div>
           </div>

@@ -7,7 +7,6 @@ import RiderDashboard from "../pages/rider/RiderDashboard";
 import MapPage from "../pages/user/MapPage";
 import LiveMap from "../pages/user/LiveMap";
 import RideDetails from "../pages/user/RideDetails";
-import RidersList from "../pages/user/RidersList";
 import ProtectedRoute from "../utils/ProtectedRoute";
 import DashboardLayout from "../layout/DashboardLayout";
 
@@ -58,12 +57,6 @@ export default function AppRoutes() {
         <Route path="/my-rides" element={
           <ProtectedRoute role="user">
             <UserDashboard />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/riders-list" element={
-          <ProtectedRoute role="user">
-            <RidersList />
           </ProtectedRoute>
         } />
 
