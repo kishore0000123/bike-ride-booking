@@ -1,7 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
-import Dashboard from "../pages/user/Dashboard";
 import UserDashboard from "../pages/user/UserDashboard";
 import RiderDashboard from "../pages/rider/RiderDashboard";
 import MapPage from "../pages/user/MapPage";
@@ -20,7 +19,7 @@ export default function AppRoutes() {
       <Route element={<DashboardLayout />}>
         <Route path="/user" element={
           <ProtectedRoute role="user">
-            <Dashboard />
+            <UserDashboard />
           </ProtectedRoute>
         } />
 
@@ -32,13 +31,13 @@ export default function AppRoutes() {
 
         <Route path="/dashboard" element={
           <ProtectedRoute role="user">
-            <Dashboard />
+            <UserDashboard />
           </ProtectedRoute>
         } />
 
         <Route path="/user-dashboard" element={
           <ProtectedRoute role="user">
-            <Dashboard />
+            <UserDashboard />
           </ProtectedRoute>
         } />
 
