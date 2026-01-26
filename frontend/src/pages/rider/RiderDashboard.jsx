@@ -69,18 +69,27 @@ export default function RiderDashboard() {
       
       // Start sending location updates
       if (navigator.geolocation) {
+        console.log("🌍 Starting location tracking for ride:", rideId);
         const watchId = navigator.geolocation.watchPosition(
           (position) => {
             const location = {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             };
-            API.post(`/ride/update-location/${rideId}`, { location });
+            console.log("📍 Sending location update:", location);
+            API.post(`/ride/update-location/${rideId}`, location)
+              .then(() => console.log("✅ Location updated successfully"))
+              .catch(err => console.error("❌ Location update failed:", err));
           },
-          (error) => console.error("Location error:", error),
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+          (error) => {
+            console.error("Location error:", error);
+            alert("Location access denied. Please enable location services.");
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
         localStorage.setItem(`watchId-${rideId}`, watchId);
+      } else {
+        alert("Geolocation is not supported by your browser");
       }
 
       fetchRides();
@@ -163,9 +172,12 @@ export default function RiderDashboard() {
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15, marginBottom: 15 }}>
                     <div>
-                      <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 5 }}>Customer</div>
-                      <div style={{ fontSize: 16, fontWeight: "500" }}>{ride.customerName}</div>
-                      <div style={{ fontSize: 14, opacity: 0.8 }}>{ride.customerPhone}</div>
+                      <div style={{ fontSize: 14, fontWeight: "500", marginBottom: 8 }}>
+                        <span style={{ opacity: 0.7 }}>Customer Name:</span> {ride.customerName}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: "500" }}>
+                        <span style={{ opacity: 0.7 }}>Phone No:</span> {ride.customerPhone}
+                      </div>
                     </div>
                     <div>
                       <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 5 }}>Booked</div>
@@ -178,14 +190,14 @@ export default function RiderDashboard() {
                       <span style={{ fontSize: 18 }}>📍</span>
                       <div>
                         <div style={{ fontSize: 12, opacity: 0.7 }}>Pickup</div>
-                        <div style={{ fontSize: 14 }}>{ride.pickup?.address || `${ride.pickup?.lat}, ${ride.pickup?.lng}`}</div>
+                        <div style={{ fontSize: 14 }}>{ride.pickup?.address || ride.pickup?.name}</div>
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                       <span style={{ fontSize: 18 }}>🏁</span>
                       <div>
                         <div style={{ fontSize: 12, opacity: 0.7 }}>Drop</div>
-                        <div style={{ fontSize: 14 }}>{ride.drop?.address || `${ride.drop?.lat}, ${ride.drop?.lng}`}</div>
+                        <div style={{ fontSize: 14 }}>{ride.drop?.address || ride.drop?.name}</div>
                       </div>
                     </div>
                   </div>
@@ -282,9 +294,12 @@ export default function RiderDashboard() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15, marginBottom: 20 }}>
                   <div>
-                    <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 5 }}>Customer</div>
-                    <div style={{ fontSize: 16, fontWeight: "500" }}>{ride.customerName}</div>
-                    <div style={{ fontSize: 14, opacity: 0.8 }}>{ride.customerPhone}</div>
+                    <div style={{ fontSize: 14, fontWeight: "500", marginBottom: 8 }}>
+                      <span style={{ opacity: 0.7 }}>Customer Name:</span> {ride.customerName}
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: "500" }}>
+                      <span style={{ opacity: 0.7 }}>Phone No:</span> {ride.customerPhone}
+                    </div>
                   </div>
                   <div>
                     <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 5 }}>Booked</div>
@@ -297,14 +312,14 @@ export default function RiderDashboard() {
                     <span style={{ color: "#4ade80", fontSize: 18 }}>📍</span>
                     <div>
                       <div style={{ fontSize: 12, opacity: 0.7 }}>Pickup</div>
-                      <div style={{ fontSize: 14 }}>{ride.pickup?.name || `${ride.pickup?.lat}, ${ride.pickup?.lng}`}</div>
+                      <div style={{ fontSize: 14 }}>{ride.pickup?.address || ride.pickup?.name}</div>
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                     <span style={{ color: "#f87171", fontSize: 18 }}>📍</span>
                     <div>
                       <div style={{ fontSize: 12, opacity: 0.7 }}>Drop</div>
-                      <div style={{ fontSize: 14 }}>{ride.drop?.name || `${ride.drop?.lat}, ${ride.drop?.lng}`}</div>
+                      <div style={{ fontSize: 14 }}>{ride.drop?.address || ride.drop?.name}</div>
                     </div>
                   </div>
                 </div>

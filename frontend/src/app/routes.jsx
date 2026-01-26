@@ -61,11 +61,7 @@ export default function AppRoutes() {
 
         <Route path="/ride/:id" element={<RideDetails />} />
 
-        <Route path="/live-map/:id" element={
-          <ProtectedRoute role="user">
-            <LiveMap />
-          </ProtectedRoute>
-        } />
+        <Route path="/live-map/:id" element={<LiveMap />} />
       </Route>
 
       {/* Redirect to login by default */}

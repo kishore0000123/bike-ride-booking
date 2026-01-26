@@ -31,13 +31,10 @@ router.post("/cancel/:id", protect, cancelRide);
 // Rate a ride
 router.post("/rate/:id", protect, rateRide);
 
-// Get ride details page
-router.get("/:id", protect, getRideById);
-
 
 /* ===================== RIDER ROUTES ===================== */
 
-// Get all pending rides
+// Get all pending rides (MUST be before /:id route)
 router.get("/pending", protect, getPendingRides);
 
 // Get rider's assigned rides
@@ -63,5 +60,11 @@ router.get("/admin/all-rides", protect, getAllRides);
 
 // Get admin statistics
 router.get("/admin/stats", protect, getAdminStats);
+
+
+/* ===================== SHARED ROUTES ===================== */
+
+// Get ride details page (MUST be at the end to avoid catching specific routes)
+router.get("/:id", protect, getRideById);
 
 module.exports = router;

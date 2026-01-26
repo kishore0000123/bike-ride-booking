@@ -130,95 +130,146 @@ exports.cancelRide = async (req, res) => {
 };
 
 exports.acceptRide = async (req, res) => {
-  const ride = await Ride.findByIdAndUpdate(
-    req.params.id,
-    { riderId: req.user._id, status: "accepted" },
-    { new: true }
-  )
-  .populate("riderId", "name email");
+  try {
+    const ride = await Ride.findByIdAndUpdate(
+      req.params.id,
+      { riderId: req.user._id, status: "accepted" },
+      { new: true }
+    )
+    .populate("riderId", "name email")
+    .populate("userId", "name email");
 
-  // Send acceptance email
-  if (ride.customerEmail) {
-    await sendRideStatusEmail(
-      ride.customerEmail,
-      ride.customerName,
-      "accepted",
-      { rideId: ride._id.toString().slice(-6) }
-    );
+    if (!ride) {
+      return res.status(404).json({ message: "Ride not found" });
+    }
+
+    // Send acceptance email
+    if (ride.customerEmail) {
+      try {
+        await sendRideStatusEmail(
+          ride.customerEmail,
+          ride.customerName,
+          "accepted",
+          { rideId: ride._id.toString().slice(-6) }
+        );
+      } catch (emailError) {
+        console.error("Email send error:", emailError);
+      }
+    }
+
+    getIO().emit("rideUpdate", ride);
+    res.json(ride);
+  } catch (error) {
+    console.error("Error accepting ride:", error);
+    res.status(500).json({ message: "Failed to accept ride", error: error.message });
   }
-
-  getIO().emit("rideUpdate", ride);
-  res.json(ride);
 };
 
 exports.startRide = async (req, res) => {
-  const ride = await Ride.findByIdAndUpdate(
-    req.params.id,
-    { status: "ongoing" },
-    { new: true }
-  )
-  .populate("riderId", "name email")
-  .populate("userId", "name email");
+  try {
+    const ride = await Ride.findByIdAndUpdate(
+      req.params.id,
+      { status: "ongoing" },
+      { new: true }
+    )
+    .populate("riderId", "name email")
+    .populate("userId", "name email");
 
-  // Send ride started email
-  if (ride.customerEmail) {
-    await sendRideStatusEmail(
-      ride.customerEmail,
-      ride.customerName,
-      "ongoing",
-      { rideId: ride._id.toString().slice(-6) }
-    );
+    if (!ride) {
+      return res.status(404).json({ message: "Ride not found" });
+    }
+
+    // Send ride started email
+    if (ride.customerEmail) {
+      try {
+        await sendRideStatusEmail(
+          ride.customerEmail,
+          ride.customerName,
+          "ongoing",
+          { rideId: ride._id.toString().slice(-6) }
+        );
+      } catch (emailError) {
+        console.error("Email send error:", emailError);
+      }
+    }
+
+    getIO().emit("rideUpdate", ride);
+    res.json(ride);
+  } catch (error) {
+    console.error("Error starting ride:", error);
+    res.status(500).json({ message: "Failed to start ride", error: error.message });
   }
-
-  getIO().emit("rideUpdate", ride);
-  res.json(ride);
 };
 
 exports.completeRide = async (req, res) => {
-  const ride = await Ride.findByIdAndUpdate(
-    req.params.id,
-    { status: "completed" },
-    { new: true }
-  ).populate("riderId", "name email");
+  try {
+    const ride = await Ride.findByIdAndUpdate(
+      req.params.id,
+      { status: "completed" },
+      { new: true }
+    )
+    .populate("riderId", "name email")
+    .populate("userId", "name email");
 
-  // Update rider earnings
-  if (ride.riderId && ride.fare && ride.fare.totalFare) {
-    await Rider.findOneAndUpdate(
-      { userId: ride.riderId._id },
-      {
-        $inc: {
-          completedRides: 1,
-          "earnings.today": ride.fare.totalFare,
-          "earnings.thisWeek": ride.fare.totalFare,
-          "earnings.thisMonth": ride.fare.totalFare,
-          "earnings.total": ride.fare.totalFare
-        }
+    if (!ride) {
+      return res.status(404).json({ message: "Ride not found" });
+    }
+
+    // Update rider earnings
+    if (ride.riderId && ride.fare && ride.fare.totalFare) {
+      try {
+        await Rider.findOneAndUpdate(
+          { userId: ride.riderId._id },
+          {
+            $inc: {
+              completedRides: 1,
+              "earnings.today": ride.fare.totalFare,
+              "earnings.thisWeek": ride.fare.totalFare,
+              "earnings.thisMonth": ride.fare.totalFare,
+              "earnings.total": ride.fare.totalFare
+            }
+          }
+        );
+      } catch (riderError) {
+        console.error("Error updating rider earnings:", riderError);
       }
-    );
-  }
+    }
 
-  // Send completion email
-  if (ride.customerEmail) {
-    await sendRideStatusEmail(
-      ride.customerEmail,
-      ride.customerName,
-      "completed",
-      { rideId: ride._id.toString().slice(-6), fare: ride.fare.totalFare }
-    );
-  }
+    // Send completion email
+    if (ride.customerEmail) {
+      try {
+        await sendRideStatusEmail(
+          ride.customerEmail,
+          ride.customerName,
+          "completed",
+          { rideId: ride._id.toString().slice(-6), fare: ride.fare.totalFare }
+        );
+      } catch (emailError) {
+        console.error("Email send error:", emailError);
+      }
+    }
 
-  getIO().emit("rideUpdate", ride);
-  res.json(ride);
+    getIO().emit("rideUpdate", ride);
+    res.json(ride);
+  } catch (error) {
+    console.error("Error completing ride:", error);
+    res.status(500).json({ message: "Failed to complete ride", error: error.message });
+  }
 };
 
 exports.getPendingRides = async (_, res) => {
-  const rides = await Ride.find({ 
-    status: { $in: ["pending", "accepted", "ongoing", "cancelled"] }
-  })
-    .populate("userId", "name email")
-    .populate("riderId", "name email")
-    .sort({ createdAt: -1 });
-  res.json(rides);
+  try {
+    const rides = await Ride.find({ 
+      status: "pending",
+      riderId: null
+    })
+      .populate("userId", "name email")
+      .sort({ createdAt: -1 });
+    res.json(rides);
+  } catch (error) {
+    console.error("Error fetching pending rides:", error);
+    res.status(500).json({ message: "Failed to fetch pending rides", error: error.message });
+  }
 };
 
 // Rate a ride
