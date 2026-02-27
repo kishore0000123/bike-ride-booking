@@ -43,4 +43,9 @@ const rideSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Indexes for faster queries
+rideSchema.index({ userId: 1, status: 1 });
+rideSchema.index({ riderId: 1, status: 1 });
+rideSchema.index({ status: 1, createdAt: -1 });
+
 module.exports = mongoose.model("Ride", rideSchema);

@@ -5,7 +5,8 @@ let io;
 const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "*",
+      origin: process.env.FRONTEND_URL || "http://localhost:3000",
+      credentials: true
     },
   });
 

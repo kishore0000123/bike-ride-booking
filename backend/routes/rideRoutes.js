@@ -1,6 +1,6 @@
 
 const router = require("express").Router();
-const { protect } = require("../middleware/authMiddleware");
+const { protect, adminOnly } = require("../middleware/authMiddleware");
 const {
   bookRide,
   acceptRide,
@@ -55,11 +55,11 @@ router.post("/update-location/:id", protect, updateRiderLocation);
 
 /* ===================== ADMIN ROUTES ===================== */
 
-// Get all rides (admin)
-router.get("/admin/all-rides", protect, getAllRides);
+// Get all rides (admin only)
+router.get("/admin/all-rides", protect, adminOnly, getAllRides);
 
-// Get admin statistics
-router.get("/admin/stats", protect, getAdminStats);
+// Get admin statistics (admin only)
+router.get("/admin/stats", protect, adminOnly, getAdminStats);
 
 
 /* ===================== SHARED ROUTES ===================== */

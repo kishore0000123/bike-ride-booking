@@ -23,4 +23,8 @@ const RiderSchema = new mongoose.Schema({
   completedRides: { type: Number, default: 0 }
 }, { timestamps: true });
 
+// Indexes for performance
+RiderSchema.index({ userId: 1 });
+RiderSchema.index({ isOnline: 1 });
+
 module.exports = mongoose.model("Rider", RiderSchema);
