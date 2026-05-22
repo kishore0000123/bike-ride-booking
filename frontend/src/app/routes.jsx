@@ -8,6 +8,8 @@ import LiveMap from "../pages/user/LiveMap";
 import RideDetails from "../pages/user/RideDetails";
 import ProtectedRoute from "../utils/ProtectedRoute";
 import DashboardLayout from "../layout/DashboardLayout";
+import AdminDashboard from "../pages/admin/AdminDashboard";
+import AdminSectionPage from "../pages/admin/AdminSectionPage";
 
 export default function AppRoutes() {
   return (
@@ -44,6 +46,54 @@ export default function AppRoutes() {
         <Route path="/rider-dashboard" element={
           <ProtectedRoute role="rider">
             <RiderDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-dashboard" element={
+          <ProtectedRoute role="admin">
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-operations" element={
+          <ProtectedRoute role="admin">
+            <AdminSectionPage section="operations" />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/drivers" element={
+          <ProtectedRoute role="admin">
+            <AdminSectionPage section="drivers" />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/vehicles" element={
+          <ProtectedRoute role="admin">
+            <AdminSectionPage section="vehicles" />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/performance" element={
+          <ProtectedRoute role="admin">
+            <AdminSectionPage section="performance" />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/incentives" element={
+          <ProtectedRoute role="admin">
+            <AdminSectionPage section="incentives" />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/banking" element={
+          <ProtectedRoute role="admin">
+            <AdminSectionPage section="banking" />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/quality" element={
+          <ProtectedRoute role="admin">
+            <AdminSectionPage section="quality" />
           </ProtectedRoute>
         } />
 

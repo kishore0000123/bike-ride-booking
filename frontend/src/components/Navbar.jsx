@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import bikeIcon from "../assets/bike.svg";
+import { logout } from "../utils/auth";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -8,9 +9,7 @@ export default function Navbar() {
   const isLoggedIn = !!localStorage.getItem("token");
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    navigate("/login");
+    logout();
   };
 
   return (
@@ -49,9 +48,14 @@ export default function Navbar() {
               </Link>
             )}
             {role === "admin" && (
-              <Link to="/admin-dashboard" style={{ color: "white", textDecoration: "none" }}>
-                Admin Panel
-              </Link>
+              <>
+                <Link to="/admin-dashboard" style={{ color: "white", textDecoration: "none" }}>
+                  Admin Panel
+                </Link>
+                <Link to="/admin-operations" style={{ color: "white", textDecoration: "none" }}>
+                  Operations
+                </Link>
+              </>
             )}
             <button
               onClick={handleLogout}

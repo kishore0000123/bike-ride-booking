@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import API from "../../services/api";
-import { setAuthData } from "../../utils/auth";
+import { setAuthData, setUserData } from "../../utils/auth";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -18,6 +18,7 @@ export default function Login() {
 
       // VERY IMPORTANT
       setAuthData(res.data);
+      setUserData(res.data);
 
       if (res.data.role === "rider") {
         navigate("/rider-dashboard");

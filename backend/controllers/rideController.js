@@ -109,24 +109,37 @@ exports.getRideById = async (req, res) => {
 };
 
 exports.cancelRide = async (req, res) => {
-  const ride = await Ride.findByIdAndUpdate(
-    req.params.id,
-    { status: "cancelled" },
-    { new: true }
-  );
-
-  // Send cancellation email
-  if (ride.customerEmail) {
-    await sendRideStatusEmail(
-      ride.customerEmail,
-      ride.customerName,
-      "cancelled",
-      { rideId: ride._id.toString().slice(-6) }
+  try {
+    const ride = await Ride.findByIdAndUpdate(
+      req.params.id,
+      { status: "cancelled" },
+      { new: true }
     );
-  }
 
-  getIO().emit("rideUpdate", ride);
-  res.json(ride);
+    if (!ride) {
+      return res.status(404).json({ message: "Ride not found" });
+    }
+
+    // Send cancellation email
+    if (ride.customerEmail) {
+      try {
+        await sendRideStatusEmail(
+          ride.customerEmail,
+          ride.customerName,
+          "cancelled",
+          { rideId: ride._id.toString().slice(-6) }
+        );
+      } catch (emailError) {
+        console.error("Email send error:", emailError);
+      }
+    }
+
+    getIO().emit("rideUpdate", ride);
+    res.json(ride);
+  } catch (error) {
+    console.error("Error cancelling ride:", error);
+    res.status(500).json({ message: "Failed to cancel ride", error: error.message });
+  }
 };
 
 exports.acceptRide = async (req, res) => {
